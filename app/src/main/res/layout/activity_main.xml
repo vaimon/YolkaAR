@@ -6,70 +6,17 @@
   android:layout_height="match_parent"
   tools:context=".MainActivity">
 
-  <androidx.constraintlayout.widget.ConstraintLayout
-      android:id="@+id/constraintLayout"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:animateLayoutChanges="true"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent">
-
-    <RadioGroup
-        android:id="@+id/radioGroup"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-      <RadioButton
-          android:id="@+id/btnAdd"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_marginStart="@dimen/padding_standard"
-          android:layout_marginEnd="@dimen/padding_standard"
-          android:checked="true"
-          android:onClick="onRadioButtonClicked"
-          android:text="@string/add" />
-
-      <RadioButton
-          android:id="@+id/btnEdit"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_marginStart="@dimen/padding_standard"
-          android:layout_marginEnd="@dimen/padding_standard"
-          android:checked="false"
-          android:onClick="onRadioButtonClicked"
-          android:text="@string/edit" />
-
-    </RadioGroup>
-
-    <Spinner
-        android:id="@+id/spinnerObjectType"
-        android:layout_width="160dp"
-        android:layout_height="wrap_content"
-        android:spinnerMode="dropdown"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/radioGroup"
-        app:layout_constraintTop_toTopOf="parent" />
-  </androidx.constraintlayout.widget.ConstraintLayout>
-
-  <com.google.android.material.floatingactionbutton.FloatingActionButton
-      android:id="@+id/btnDelete"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_margin="8dp"
-      android:background="@null"
-      android:enabled="false"
-      android:src="@drawable/baseline_delete_24"
-      app:layout_constraintBottom_toBottomOf="parent"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:tint="@color/white" />
+<!--  <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+<!--      android:id="@+id/btnDelete"-->
+<!--      android:layout_width="wrap_content"-->
+<!--      android:layout_height="wrap_content"-->
+<!--      android:layout_margin="8dp"-->
+<!--      android:background="@null"-->
+<!--      android:enabled="false"-->
+<!--      android:src="@drawable/baseline_delete_24"-->
+<!--      app:layout_constraintBottom_toBottomOf="parent"-->
+<!--      app:layout_constraintEnd_toEndOf="parent"-->
+<!--      app:tint="@color/white" />-->
 
   <android.opengl.GLSurfaceView
       android:id="@+id/surfaceView"
@@ -78,6 +25,16 @@
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintLeft_toLeftOf="parent"
       app:layout_constraintRight_toRightOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
+      app:layout_constraintTop_toTopOf="parent" />
+
+  <com.google.android.material.appbar.MaterialToolbar
+      android:id="@+id/toolbar"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      app:title="@string/app_name"
+      app:titleCentered="true"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

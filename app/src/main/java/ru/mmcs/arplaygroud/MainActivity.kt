@@ -45,22 +45,31 @@
 
 package ru.mmcs.arplaygroud
 
-import android.graphics.Color
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
+import android.view.MenuItem
 import android.view.MotionEvent
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.ar.core.*
+import com.google.ar.core.ArCoreApk
 import com.google.ar.core.ArCoreApk.InstallStatus
-import com.google.ar.core.exceptions.*
+import com.google.ar.core.Camera
+import com.google.ar.core.Frame
+import com.google.ar.core.HitResult
+import com.google.ar.core.Plane
+import com.google.ar.core.Point
+import com.google.ar.core.Pose
+import com.google.ar.core.Session
+import com.google.ar.core.TrackingState
+import com.google.ar.core.exceptions.CameraNotAvailableException
+import com.google.ar.core.exceptions.UnavailableApkTooOldException
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
 import ru.mmcs.arplaygroud.databinding.ActivityMainBinding
 import ru.mmcs.arplaygroud.rendering.BackgroundRenderer
 import ru.mmcs.arplaygroud.rendering.CannonObject
@@ -71,14 +80,18 @@ import ru.mmcs.arplaygroud.rendering.PlaneRenderer
 import ru.mmcs.arplaygroud.rendering.PointCloudRenderer
 import ru.mmcs.arplaygroud.rendering.TargetObject
 import ru.mmcs.arplaygroud.rendering.VikingObject
-import ru.mmcs.planetrackerar.common.helpers.*
+import ru.mmcs.planetrackerar.common.helpers.CameraPermissionHelper
+import ru.mmcs.planetrackerar.common.helpers.DisplayRotationHelper
+import ru.mmcs.planetrackerar.common.helpers.FullScreenHelper
+import ru.mmcs.planetrackerar.common.helpers.SnackbarHelper
+import ru.mmcs.planetrackerar.common.helpers.TrackingStateHelper
 import java.io.IOException
-import java.lang.Math.pow
 import java.util.concurrent.ArrayBlockingQueue
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.pow
 import kotlin.math.sqrt
+
 
 class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
@@ -111,6 +124,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private val maxAllocationSize = 16
     private val queuedSingleTaps = ArrayBlockingQueue<MotionEvent>(maxAllocationSize)
 
+    private var color: Int = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
 
@@ -119,36 +134,29 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         setContentView(binding.root)
 
+        color = intent.getIntExtra("color", -1)
+
         trackingStateHelper = TrackingStateHelper(this@MainActivity)
         displayRotationHelper = DisplayRotationHelper(this@MainActivity)
 
         installRequested = false
 
+        setupToolbar()
         setupTapDetector()
         setupSurfaceView()
-        setupSpinner()
-        setupButtons()
     }
 
-    private fun setupButtons() {
-        binding.btnDelete.setOnClickListener {
-            if (selectedObjectIndex != null) {
-                sceneObjects.removeAt(selectedObjectIndex!!)
-                selectedObjectIndex = null
-            } else {
-                messageSnackbarHelper.showToast(
-                    this@MainActivity,
-                    getString(R.string.choose_an_object_to_delete_first)
-                )
-            }
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
         }
-    }
-
-    fun onRadioButtonClicked(view: View) {
-        isEditMode = view.id == R.id.btnEdit
-        binding.spinnerObjectType.isEnabled = !isEditMode
-        binding.btnDelete.isEnabled = isEditMode
-        selectedObjectIndex = null
+        return super.onOptionsItemSelected(item)
     }
 
     private fun setupSurfaceView() {
@@ -160,34 +168,6 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         binding.surfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
         binding.surfaceView.setWillNotDraw(false)
         binding.surfaceView.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
-    }
-
-    private fun setupSpinner() {
-        binding.spinnerObjectType.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            listOf(
-                getString(R.string.viking),
-                getString(R.string.cannon),
-                getString(R.string.target)
-            )
-        );
-        binding.spinnerObjectType.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-//                (p0?.getChildAt(0) as TextView?)?.setTextColor(Color.WHITE)
-                    when (p0?.selectedItemPosition) {
-                        0 -> mode = Mode.VIKING
-                        1 -> mode = Mode.CANNON
-                        2 -> mode = Mode.TARGET
-                    }
-                }
-
-                override fun onNothingSelected(p0: AdapterView<*>?) {
-                    p0?.setSelection(0)
-                }
-
-            }
     }
 
     private fun setupTapDetector() {

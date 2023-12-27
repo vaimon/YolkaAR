@@ -47,6 +47,7 @@ dependencies {
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("com.google.ar:core:1.40.0")
     implementation ("de.javagl:obj:0.3.0")
+    implementation("com.github.skydoves:colorpickerview:2.3.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
