@@ -419,23 +419,10 @@ open class ObjectRenderer(
 
 }
 
-class VikingObject(context: Context, planeAttachment: PlaneAttachment) : ObjectRenderer(
+class ChristmasTreeObject(context: Context, planeAttachment: PlaneAttachment)  : ObjectRenderer(
     planeAttachment,
-    context.getString(R.string.model_viking_obj),
-    context.getString(R.string.model_viking_png),
-    material = Material(specular = .25f, specularPower = 16f)
-)
-
-class CannonObject(context: Context, planeAttachment: PlaneAttachment) : ObjectRenderer(
-    planeAttachment,
-    context.getString(R.string.model_cannon_obj),
-    context.getString(R.string.model_cannon_png),
-    scaleFactor = .2f
-)
-
-class TargetObject(context: Context, planeAttachment: PlaneAttachment) : ObjectRenderer(
-    planeAttachment,
-    context.getString(R.string.model_target_obj),
-    context.getString(R.string.model_target_png),
-    scaleFactor = .5f
+    context.getString(R.string.model_tree_obj),
+    context.getString(R.string.model_tree_png),
+    material = Material(specular = 0f, specularPower = 0f),
+    scaleFactor = 0.004f
 )

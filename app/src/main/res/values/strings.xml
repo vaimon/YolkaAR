@@ -17,6 +17,8 @@
     <string name="model_grid_png">models/trigrid.png</string>
     <string name="model_viking_obj">models/viking.obj</string>
     <string name="model_viking_png">models/viking.png</string>
+    <string name="model_tree_obj">models/tree.obj</string>
+    <string name="model_tree_png">models/tree.jpg</string>
     <string name="model_cannon_obj">models/cannon.obj</string>
     <string name="model_target_obj">models/target.obj</string>
     <string name="model_cannon_png">models/cannon.png</string>

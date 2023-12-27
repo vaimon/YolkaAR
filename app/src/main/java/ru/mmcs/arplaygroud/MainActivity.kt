@@ -73,6 +73,7 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import ru.mmcs.arplaygroud.databinding.ActivityMainBinding
 import ru.mmcs.arplaygroud.rendering.BackgroundRenderer
 import ru.mmcs.arplaygroud.rendering.CannonObject
+import ru.mmcs.arplaygroud.rendering.ChristmasTreeObject
 import ru.mmcs.arplaygroud.rendering.Mode
 import ru.mmcs.arplaygroud.rendering.ObjectRenderer
 import ru.mmcs.arplaygroud.rendering.PlaneAttachment
@@ -101,8 +102,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
     private var installRequested = false
 
-    private var mode: Mode = Mode.VIKING
-    private var isEditMode: Boolean = false
+//    private var mode: Mode = Mode.VIKING
+    private var isDecorationMode: Boolean = false
 
     private var session: Session? = null
 
@@ -498,12 +499,12 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             for (hit in frame.hitTest(tap)) {
                 val trackable = hit.trackable
 
-                if (isEditMode) {
-                    selectedObjectIndex = sceneObjects.withIndex().minByOrNull {
-                        hit.hitPose.xzDistanceTo(it.value.planeAttachment.pose)
-                    }?.index
-                    return
-                }
+//                if (isEditMode) {
+//                    selectedObjectIndex = sceneObjects.withIndex().minByOrNull {
+//                        hit.hitPose.xzDistanceTo(it.value.planeAttachment.pose)
+//                    }?.index
+//                    return
+//                }
 
                 if ((trackable is Plane
                             && trackable.isPoseInPolygon(hit.hitPose)
@@ -512,19 +513,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                             && trackable.orientationMode
                             == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
                 ) {
-                    when (mode) {
-                        Mode.VIKING -> {
-                            VikingObject(this@MainActivity, addSessionAnchorFromAttachment(hit))
-                        }
-
-                        Mode.CANNON -> {
-                            CannonObject(this@MainActivity, addSessionAnchorFromAttachment(hit))
-                        }
-
-                        Mode.TARGET -> {
-                            TargetObject(this@MainActivity, addSessionAnchorFromAttachment(hit))
-                        }
-                    }.let {
+                    ChristmasTreeObject(this@MainActivity, addSessionAnchorFromAttachment(hit)).let {
                         it.createOnGlThread(this@MainActivity)
                         for (obj in sceneObjects) {
                             if (obj.boundingBox.intersectsWith(it.boundingBox)) {
