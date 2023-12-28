@@ -59,7 +59,7 @@ class SnackbarHelper {
     private var messageSnackbar: Snackbar? = null
 
     private var lastMessage = ""
-    private val isShowing: Boolean
+    val isShowing: Boolean
         get() = messageSnackbar != null
 
     /**

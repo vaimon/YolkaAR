@@ -72,15 +72,11 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
 import ru.mmcs.arplaygroud.databinding.ActivityMainBinding
 import ru.mmcs.arplaygroud.rendering.BackgroundRenderer
-import ru.mmcs.arplaygroud.rendering.CannonObject
 import ru.mmcs.arplaygroud.rendering.ChristmasTreeObject
-import ru.mmcs.arplaygroud.rendering.Mode
 import ru.mmcs.arplaygroud.rendering.ObjectRenderer
 import ru.mmcs.arplaygroud.rendering.PlaneAttachment
 import ru.mmcs.arplaygroud.rendering.PlaneRenderer
 import ru.mmcs.arplaygroud.rendering.PointCloudRenderer
-import ru.mmcs.arplaygroud.rendering.TargetObject
-import ru.mmcs.arplaygroud.rendering.VikingObject
 import ru.mmcs.planetrackerar.common.helpers.CameraPermissionHelper
 import ru.mmcs.planetrackerar.common.helpers.DisplayRotationHelper
 import ru.mmcs.planetrackerar.common.helpers.FullScreenHelper
@@ -455,12 +451,23 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         )
     }
 
+    private var planeFound = false
+
     /**
      * Checks if any tracking plane exists then, hide the message UI, otherwise show searchingPlane message.
      */
     private fun checkPlaneDetected() {
         if (hasTrackingPlane()) {
-            messageSnackbarHelper.hide(this@MainActivity)
+            if(!planeFound){
+                planeFound = true
+                messageSnackbarHelper.hide(this@MainActivity)
+            }
+            if(!isDecorationMode && !messageSnackbarHelper.isShowing){
+                messageSnackbarHelper.showMessage(
+                    this@MainActivity,
+                    getString(R.string.tree_invitation)
+                )
+            }
         } else {
             messageSnackbarHelper.showMessage(
                 this@MainActivity,
@@ -513,18 +520,31 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                             && trackable.orientationMode
                             == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
                 ) {
-                    ChristmasTreeObject(this@MainActivity, addSessionAnchorFromAttachment(hit)).let {
-                        it.createOnGlThread(this@MainActivity)
-                        for (obj in sceneObjects) {
-                            if (obj.boundingBox.intersectsWith(it.boundingBox)) {
-                                messageSnackbarHelper.showToast(
-                                    this,
-                                    getString(R.string.objects_collided)
-                                )
-                                return@let
-                            }
+                    if(isDecorationMode){
+                        break
+                    }else {
+                        ChristmasTreeObject(
+                            this@MainActivity,
+                            addSessionAnchorFromAttachment(hit)
+                        ).let {
+                            it.createOnGlThread(this@MainActivity)
+//                            for (obj in sceneObjects) {
+//                                if (obj.boundingBox.intersectsWith(it.boundingBox)) {
+//                                    messageSnackbarHelper.showToast(
+//                                        this,
+//                                        getString(R.string.objects_collided)
+//                                    )
+//                                    return@let
+//                                }
+//                            }
+                            messageSnackbarHelper.hide(this@MainActivity)
+                            messageSnackbarHelper.showToast(
+                                this,
+                                getString(R.string.decoration_mode_invitation)
+                            )
+                            sceneObjects.add(it)
+                            isDecorationMode = true
                         }
-                        sceneObjects.add(it)
                     }
                     break
                 }
