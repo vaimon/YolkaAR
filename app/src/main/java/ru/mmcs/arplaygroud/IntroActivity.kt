@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.skydoves.colorpickerview.listeners.ColorListener
 import ru.mmcs.arplaygroud.databinding.ActivityIntroBinding
+import ru.mmcs.arplaygroud.rendering.ObjectRenderer
 
 
 class IntroActivity : AppCompatActivity() {

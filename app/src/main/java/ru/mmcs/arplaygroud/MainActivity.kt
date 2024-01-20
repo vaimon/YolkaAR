@@ -45,8 +45,10 @@
 
 package ru.mmcs.arplaygroud
 
+import android.graphics.Color
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
@@ -72,6 +74,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
 import ru.mmcs.arplaygroud.databinding.ActivityMainBinding
 import ru.mmcs.arplaygroud.rendering.BackgroundRenderer
+import ru.mmcs.arplaygroud.rendering.BaubleObject
 import ru.mmcs.arplaygroud.rendering.ChristmasTreeObject
 import ru.mmcs.arplaygroud.rendering.ObjectRenderer
 import ru.mmcs.arplaygroud.rendering.PlaneAttachment
@@ -114,6 +117,9 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private val pointCloudRenderer: PointCloudRenderer = PointCloudRenderer()
 
     private val sceneObjects: MutableList<ObjectRenderer> = mutableListOf()
+
+    private var treeObject: ChristmasTreeObject? = null
+
     private var selectedObjectIndex: Int? = null
 
 
@@ -121,7 +127,6 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private val maxAllocationSize = 16
     private val queuedSingleTaps = ArrayBlockingQueue<MotionEvent>(maxAllocationSize)
 
-    private var color: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -131,7 +136,9 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         setContentView(binding.root)
 
-        color = intent.getIntExtra("color", -1)
+        val color = intent.getIntExtra("color", -1)
+
+        ObjectRenderer.BAUBLE_COLOR = Color.valueOf(color).components
 
         trackingStateHelper = TrackingStateHelper(this@MainActivity)
         displayRotationHelper = DisplayRotationHelper(this@MainActivity)
@@ -354,12 +361,19 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                 checkPlaneDetected()
                 visualizePlanes(camera, projectionMatrix)
 
-                for (obj in sceneObjects.withIndex()) {
-                    obj.value.drawObject(
+                treeObject?.drawObject(
+                    projectionMatrix,
+                    viewMatrix,
+                    lightIntensity,
+                    false
+                )
+
+                for (obj in sceneObjects) {
+                    obj.drawObject(
                         projectionMatrix,
                         viewMatrix,
                         lightIntensity,
-                        obj.index == selectedObjectIndex
+                        true
                     )
                 }
             } catch (t: Throwable) {
@@ -392,7 +406,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                 viewMatrix,
                 projectionMatrix,
                 lightIntensity,
-                if (isHighlighted) ObjectRenderer.HIGHLIGHT_COLOR else ObjectRenderer.DEFAULT_COLOR
+                if (isHighlighted) ObjectRenderer.BAUBLE_COLOR else ObjectRenderer.DEFAULT_COLOR
             )
         }
     }
@@ -496,12 +510,75 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     }
 
     /**
+     * Returns a world coordinate frame ray for a screen point.  The ray is
+     * defined using a 6-element float array containing the head location
+     * followed by a normalized direction vector.
+     */
+    fun screenPointToWorldRay(xPx: Float, yPx: Float, frame: Frame): FloatArray {
+        val points = FloatArray(12) // {clip query, camera query, camera origin}
+        // Set up the clip-space coordinates of our query point
+        // +x is right:
+        points[0] = 2.0f * xPx / binding.surfaceView.measuredWidth - 1.0f
+        // +y is up (android UI Y is down):
+        points[1] = 1.0f - 2.0f * yPx / binding.surfaceView.measuredHeight
+        points[2] = 1.0f // +z is forwards (remember clip, not camera)
+        points[3] = 1.0f // w (homogenous coordinates)
+        val matrices = FloatArray(32) // {proj, inverse proj}
+        // If you'll be calling this several times per frame factor out
+        // the next two lines to run when Frame.isDisplayRotationChanged().
+        frame.camera.getProjectionMatrix(matrices, 0, 1.0f, 100.0f)
+        Matrix.invertM(matrices, 16, matrices, 0)
+        // Transform clip-space point to camera-space.
+        Matrix.multiplyMV(points, 4, matrices, 16, points, 0)
+        // points[4,5,6] is now a camera-space vector.  Transform to world space to get a point
+        // along the ray.
+        val out = FloatArray(6)
+        frame.androidSensorPose.transformPoint(points, 4, out, 3)
+        // use points[8,9,10] as a zero vector to get the ray head position in world space.
+        frame.androidSensorPose.transformPoint(points, 8, out, 0)
+        // normalize the direction vector:
+        val dx = out[3] - out[0]
+        val dy = out[4] - out[1]
+        val dz = out[5] - out[2]
+        val scale = 1.0f / Math.sqrt((dx * dx + dy * dy + dz * dz).toDouble()).toFloat()
+        out[3] = dx * scale
+        out[4] = dy * scale
+        out[5] = dz * scale
+        return out
+    }
+
+    /**
      * Handle a single tap per frame
      */
     private fun handleTap(frame: Frame, camera: Camera) {
         val tap = queuedSingleTaps.poll()
 
         if (tap != null && camera.trackingState == TrackingState.TRACKING) {
+
+            if(isDecorationMode){
+                val ray = screenPointToWorldRay(tap.x, tap.y, frame)
+                val intersection = treeObject?.coneBoundingBox?.intersectWithRay(
+                    floatArrayOf(ray[3], ray[4], ray[5]),
+                    floatArrayOf(ray[0], ray[1], ray[2])
+                )
+                intersection?. let{
+                    Log.d("Debug", ray.joinToString(" "))
+                    Log.d("Debug", it.joinToString(" "))
+                    BaubleObject(
+                        this@MainActivity,
+                        treeObject!!.planeAttachment,
+                        it
+                    ).let{
+                        it.createOnGlThread(this@MainActivity)
+                        sceneObjects.add(it)
+                    }
+
+                } ?: {
+                    Log.d("Debug", "Miss!")
+                    messageSnackbarHelper.showMessage(this@MainActivity,"Tap on a tree, not anywhere else!")
+                }
+//                        messageSnackbarHelper.showMessage(this@MainActivity, "ray: ${ray[0].format(2)}, ${ray[1].format(2)}, ${ray[2].format(2)}, bbox: ${treeObject?.boundingBox}")
+            }
             // Check if any plane was hit, and if it was hit inside the plane polygon
             for (hit in frame.hitTest(tap)) {
                 val trackable = hit.trackable
@@ -520,9 +597,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                             && trackable.orientationMode
                             == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
                 ) {
-                    if(isDecorationMode){
-                        break
-                    }else {
+                    if(!isDecorationMode) {
                         ChristmasTreeObject(
                             this@MainActivity,
                             addSessionAnchorFromAttachment(hit)
@@ -542,7 +617,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                                 this,
                                 getString(R.string.decoration_mode_invitation)
                             )
-                            sceneObjects.add(it)
+                            treeObject = it
                             isDecorationMode = true
                         }
                     }
@@ -564,3 +639,5 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     }
 
 }
+
+fun Float.format(digits: Int) = "%.${digits}f".format(this)

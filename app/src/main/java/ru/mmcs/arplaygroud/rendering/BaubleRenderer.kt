@@ -50,7 +50,6 @@ import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.opengl.Matrix
-import android.util.Log
 import de.javagl.obj.ObjData
 import de.javagl.obj.ObjReader
 import de.javagl.obj.ObjUtils
@@ -59,21 +58,14 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-data class Material(
-    var ambient: Float = 0.3f,
-    var diffuse: Float = 1.0f,
-    var specular: Float = 1.0f,
-    var specularPower: Float = 6.0f
-)
-
 /**
  * Renders an object loaded from an OBJ file in OpenGL.
  */
-open class ObjectRenderer(
+open class BaubleRenderer(
     var planeAttachment: PlaneAttachment,
     private val objAssetName: String,
     private val diffuseTextureAssetName: String,
-    protected val scaleFactor: Float = 1f,
+    private val scaleFactor: Float = 1f,
     val material: Material = Material(),
 ) {
 
@@ -114,22 +106,16 @@ open class ObjectRenderer(
     private var colorUniform = 0
 
     // Temporary matrices allocated here to reduce number of allocations for each frame.
-    protected val modelMatrix = FloatArray(16)
+    private val modelMatrix = FloatArray(16)
     private val modelViewMatrix = FloatArray(16)
     private val modelViewProjectionMatrix = FloatArray(16)
 
     private val _boundingBox = BoundingBox()
 
-    val boundingBox: ModelBoundingBox
+    val boundingBox: BoundingBox
         get(){
             updateModelMatrix()
             return _boundingBox.getModelBoundingBox(modelMatrix)
-        }
-
-    val coneBoundingBox: ConeModelBoundingBox
-        get(){
-            updateModelMatrix()
-            return _boundingBox.getConeModelBoundingBox(modelMatrix)
         }
 
     /**
@@ -273,7 +259,7 @@ open class ObjectRenderer(
      * @param scaleFactor A separate scaling factor to apply before the `modelMatrix`.
      * @see Matrix
      */
-    open fun updateModelMatrix() {
+    fun updateModelMatrix() {
         val anchorMatrix = FloatArray(16)
         planeAttachment.pose.toMatrix(anchorMatrix, 0)
         val scaleMatrix = FloatArray(16)
@@ -409,7 +395,7 @@ open class ObjectRenderer(
         private const val FRAGMENT_SHADER_NAME = "shaders/object.frag"
         private const val COORDS_PER_VERTEX = 3
         val DEFAULT_COLOR = floatArrayOf(0f, 0f, 0f, 0f)
-        var BAUBLE_COLOR = floatArrayOf(1f, 1f, 0f, 0.5f)
+        val HIGHLIGHT_COLOR = floatArrayOf(1f, 1f, 0f, 0.5f)
 
         // Note: the last component must be zero to avoid applying the translational part of the matrix.
         private val LIGHT_DIRECTION = floatArrayOf(0.250f, 0.866f, 0.433f, 0.0f)
@@ -424,38 +410,4 @@ open class ObjectRenderer(
         }
     }
 
-}
-
-class ChristmasTreeObject(context: Context, planeAttachment: PlaneAttachment)  : ObjectRenderer(
-    planeAttachment,
-    context.getString(R.string.model_tree_obj),
-    context.getString(R.string.model_tree_png),
-    material = Material(specular = 0f, specularPower = 0f),
-    scaleFactor = 0.004f
-)
-
-class BaubleObject(context: Context, planeAttachment: PlaneAttachment, val poseShift: FloatArray) : ObjectRenderer(
-    planeAttachment,
-    context.getString(R.string.model_bauble_obj),
-    context.getString(R.string.model_tree_png),
-    material = Material(specular = 0.5f, specularPower = 0.75f),
-    scaleFactor = 0.05f
-){
-    init {
-        Log.d("Debug", planeAttachment.pose.translation.joinToString(" ", prefix = "pose: "))
-    }
-    override fun updateModelMatrix() {
-        val anchorMatrix = FloatArray(16)
-        val pose = planeAttachment.pose
-        pose.toMatrix(anchorMatrix, 0)
-        anchorMatrix[12] = poseShift[0]
-        anchorMatrix[13] = poseShift[1]
-        anchorMatrix[14] = poseShift[2]
-        val scaleMatrix = FloatArray(16)
-        Matrix.setIdentityM(scaleMatrix, 0)
-        scaleMatrix[0] = scaleFactor
-        scaleMatrix[5] = scaleFactor
-        scaleMatrix[10] = scaleFactor
-        Matrix.multiplyMM(this.modelMatrix, 0, anchorMatrix, 0, scaleMatrix, 0)
-    }
 }
