@@ -106,12 +106,8 @@ class ConeModelBoundingBox(
     var radius: Float = 0f
 ) : ModelBoundingBox(){
     override fun intersectWithRay(rayDirection: FloatArray, raySource: FloatArray): FloatArray? {
-        Log.d("Debug", topCenter.joinToString(" ", prefix = "top: "))
-        Log.d("Debug", bottomCenter.joinToString(" ", prefix = "bottom: "))
-        Log.d("Debug", "radius: $radius")
-
-//        val thetaCos = (topCenter.toVector3() - bottomCenter.toVector3()).length / (Vector3(bottomCenter[0] - radius, bottomCenter[1], bottomCenter[2]) - topCenter.toVector3()).length
-        val thetaCos = sqrt(3f) / 2f
+        val thetaCos = (topCenter.toVector3() - bottomCenter.toVector3()).length / (Vector3(bottomCenter[0] - radius, bottomCenter[1], bottomCenter[2]) - topCenter.toVector3()).length
+//        val thetaCos = sqrt(3f) / 2f
         val directionVector = rayDirection.toVector3().normalized
         val axisVector = (bottomCenter.toVector3() - topCenter.toVector3()).normalized
         val topOriginVector = raySource.toVector3() - topCenter.toVector3()
@@ -123,7 +119,9 @@ class ConeModelBoundingBox(
 
         if(d < 0)
             return null
-        val res =  (raySource.toVector3() + (directionVector * ((-b - sqrt(d)) / (2 * a))))
+        val res =  (raySource.toVector3() + (directionVector * ((-b + sqrt(d)) / (2 * a))))
+        if(res.y < minY || res.y > maxY)
+            return null
         return floatArrayOf(res.x, res.y, res.z, 1f)
     }
 }

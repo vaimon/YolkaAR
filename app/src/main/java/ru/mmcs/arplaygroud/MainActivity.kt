@@ -561,34 +561,22 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                     floatArrayOf(ray[3], ray[4], ray[5]),
                     floatArrayOf(ray[0], ray[1], ray[2])
                 )
-                intersection?. let{
-                    Log.d("Debug", ray.joinToString(" "))
-                    Log.d("Debug", it.joinToString(" "))
+                intersection?.apply{
                     BaubleObject(
                         this@MainActivity,
                         treeObject!!.planeAttachment,
-                        it
+                        this
                     ).let{
                         it.createOnGlThread(this@MainActivity)
                         sceneObjects.add(it)
                     }
-
                 } ?: {
-                    Log.d("Debug", "Miss!")
                     messageSnackbarHelper.showMessage(this@MainActivity,"Tap on a tree, not anywhere else!")
                 }
-//                        messageSnackbarHelper.showMessage(this@MainActivity, "ray: ${ray[0].format(2)}, ${ray[1].format(2)}, ${ray[2].format(2)}, bbox: ${treeObject?.boundingBox}")
-            }
+          }
             // Check if any plane was hit, and if it was hit inside the plane polygon
             for (hit in frame.hitTest(tap)) {
                 val trackable = hit.trackable
-
-//                if (isEditMode) {
-//                    selectedObjectIndex = sceneObjects.withIndex().minByOrNull {
-//                        hit.hitPose.xzDistanceTo(it.value.planeAttachment.pose)
-//                    }?.index
-//                    return
-//                }
 
                 if ((trackable is Plane
                             && trackable.isPoseInPolygon(hit.hitPose)
@@ -603,15 +591,6 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                             addSessionAnchorFromAttachment(hit)
                         ).let {
                             it.createOnGlThread(this@MainActivity)
-//                            for (obj in sceneObjects) {
-//                                if (obj.boundingBox.intersectsWith(it.boundingBox)) {
-//                                    messageSnackbarHelper.showToast(
-//                                        this,
-//                                        getString(R.string.objects_collided)
-//                                    )
-//                                    return@let
-//                                }
-//                            }
                             messageSnackbarHelper.hide(this@MainActivity)
                             messageSnackbarHelper.showToast(
                                 this,
